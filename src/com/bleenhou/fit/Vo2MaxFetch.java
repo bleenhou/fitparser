@@ -45,7 +45,7 @@ public class Vo2MaxFetch {
 	 * @param path path to the fit file
 	 * @return Vo2Max value from the supplied fitFile
 	 */
-	private static FitData getVo2Max(String path) throws IOException {
+	private static FitData extractMetrics(String path) throws IOException {
 		final FitData fitData = new FitData();
 		try (FileInputStream in = new FileInputStream(path)) {
 			new Decode().read(in, m -> {
@@ -77,11 +77,12 @@ public class Vo2MaxFetch {
 		// Fetch Vo2Max in each file and sort by date from file name
 		final Map<LocalDate, FitData> fitDataPerDate = new TreeMap<>();
 		for (File f : folder.listFiles()){
-			final FitData fitData = getVo2Max(f.getAbsolutePath());
+			final FitData fitData = extractMetrics(f.getAbsolutePath());
 			if (fitData.getSport() == Sport.RUNNING) {
 				final LocalDate time = fitData.getTime().toLocalDate();
 				fitDataPerDate.putIfAbsent(time, fitData);
-				if (fitData.getVo2Max() > 0 && fitData.getVo2Max() > fitDataPerDate.get(time).getVo2Max()) // Only keep highest vo2Max per day
+				// Only keep highest vo2Max per day
+				if (fitData.getVo2Max() > 0 && fitData.getVo2Max() > fitDataPerDate.get(time).getVo2Max()) 
 					fitDataPerDate.put(time, fitData);
 			}
 		}
@@ -126,8 +127,6 @@ public class Vo2MaxFetch {
         	return ((currentAvg * index) + currentValue) / (index + 1);
         return (((currentAvg * values.length) - values[index ]) + currentValue) / values.length;
 	}
-	
-	
 
 	private static class FitData {
 		private double vo2Max;
