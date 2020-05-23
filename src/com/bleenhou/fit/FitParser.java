@@ -24,7 +24,7 @@ import com.garmin.fit.DateTime;
 import com.garmin.fit.Decode;
 import com.garmin.fit.Sport;
 
-public class Vo2MaxFetch {
+public class FitParser {
 
 	private static final int DATETIME_MESSAGE_ID = 0;
 	private static final int DATETIME_FIELD_ID = 4;
@@ -109,7 +109,7 @@ public class Vo2MaxFetch {
 		final String avgData = fitDataPerDate.entrySet().stream().map(e -> String.format("{x: new Date('%s'), y:%.2f}", e.getKey(), 
 				currentAvg[0] = computeAvg(values, index.getAndIncrement() % values.length, currentAvg[0], f.apply(e.getValue()).doubleValue()))).collect(Collectors.joining(","));
 		
-		final String text = new Scanner(Vo2MaxFetch.class.getResourceAsStream("template.html"), "UTF-8").useDelimiter("\\A").next();
+		final String text = new Scanner(FitParser.class.getResourceAsStream("template.html"), "UTF-8").useDelimiter("\\A").next();
 		final Path resultFile = Files.createTempFile(name, ".html");
 		Files.write(resultFile, text.replace("{{DATA}}", data).replace("{{AVGDATA}}", avgData).replace("{{LABEL}}", name).getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
 		return resultFile;
