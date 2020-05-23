@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -102,7 +101,7 @@ public class FitParser {
 	private static final Path createGraph(Map<LocalDate, FitData> fitDataPerDate, String name, Function<FitData, Number> f) throws IOException {
 		
 		// Raw data
-		final String data = fitDataPerDate.entrySet().stream().map(e -> String.format("{x: new Date('%s'), y:%.2f}", e.getKey(), f.apply(e.getValue()).doubleValue())).collect(Collectors.joining(","));
+		final String data = fitDataPerDate.entrySet().stream().map(e -> String.format(Locale.US, "{x: new Date('%s'), y:%.2f}", e.getKey(), f.apply(e.getValue()).doubleValue())).collect(Collectors.joining(","));
 		
 		// Averaged data
 		final double values [] = {0,0,0,0,0,0,0,0,0,0};
