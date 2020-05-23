@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
@@ -106,7 +108,7 @@ public class FitParser {
 		final double values [] = {0,0,0,0,0,0,0,0,0,0};
 		final AtomicInteger index = new AtomicInteger();
 		final double [] currentAvg = {0};
-		final String avgData = fitDataPerDate.entrySet().stream().map(e -> String.format("{x: new Date('%s'), y:%.2f}", e.getKey(), 
+		final String avgData = fitDataPerDate.entrySet().stream().map(e -> String.format(Locale.US, "{x: new Date('%s'), y:%.2f}", e.getKey(), 
 				currentAvg[0] = computeAvg(values, index.getAndIncrement() % values.length, currentAvg[0], f.apply(e.getValue()).doubleValue()))).collect(Collectors.joining(","));
 		
 		final String text = new Scanner(FitParser.class.getResourceAsStream("template.html"), "UTF-8").useDelimiter("\\A").next();
