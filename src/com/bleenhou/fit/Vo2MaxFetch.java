@@ -81,7 +81,7 @@ public class Vo2MaxFetch {
 			if (fitData.getSport() == Sport.RUNNING) {
 				final LocalDate time = fitData.getTime().toLocalDate();
 				fitDataPerDate.putIfAbsent(time, fitData);
-				if (fitData.getVo2Max() > fitDataPerDate.get(time).getVo2Max()) // Only keep highest vo2Max per day
+				if (fitData.getVo2Max() > 0 && fitData.getVo2Max() > fitDataPerDate.get(time).getVo2Max()) // Only keep highest vo2Max per day
 					fitDataPerDate.put(time, fitData);
 			}
 		}
