@@ -19,6 +19,7 @@
 	<div style="width:95%;">
 		<canvas id="canvas"></canvas>
 	</div>
+	<button onclick="downloadChartDataCSV()">Download Data as CSV</button>
 	<script>
 		var config = {
 			type: 'line',
@@ -62,7 +63,7 @@
 						display: true,
 						scaleLabel: {
 							display: true,
-							labelString: 'Vo2Max'
+							labelString: '{{LABEL}}'
 						}
 					}]
 				}
@@ -73,6 +74,33 @@
 			var ctx = document.getElementById('canvas').getContext('2d');
 			window.myLine = new Chart(ctx, config);
 		};
+
+		function downloadChartDataCSV() {
+			var chartData = window.myLine.config.data.datasets;
+			var labels = [];
+			var dataLength = chartData[0].data.length;
+			for (var i = 0; i < chartData.length; i++) {
+				labels.push(chartData[i].label);
+			}
+			var filename = labels.join('-') + '.csv';
+			var fileContents = 'Date,' + labels.join(',');
+
+			for (var i = 0; i < dataLength; i++) {
+				var lineData = [chartData[0].data[i].x];
+				for (var j = 0; j < chartData.length; j++) {
+					lineData.push(chartData[j].data[i].y)
+				}
+				fileContents = fileContents + '\n' + lineData.join(',');
+			}
+
+			var element = document.createElement('a');
+			element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(fileContents));
+			element.setAttribute('download', filename);
+			element.style.display = 'none';
+			document.body.appendChild(element);
+			element.click();
+			document.body.removeChild(element);
+		}		
 	</script>
 </body>
 </html>
