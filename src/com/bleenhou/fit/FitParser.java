@@ -37,6 +37,10 @@ public class FitParser {
 	private static final int CADENCE_FIELD_ID = 18;
 	private static final int HR_MESSAGE_ID = 18;
 	private static final int HR_FIELD_ID = 16;
+	private static final int DISTANCE_MESSAGE_ID = 18;
+	private static final int DISTANCE_FIELD_ID = 9;
+	private static final int TIME_MESSAGE_ID = 18;
+	private static final int TIME_FIELD_ID = 8;
 	private static final int WEIGHT_MESSAGE_ID = 79;
 	private static final int WEIGHT_FIELD_ID = 3;
 	private static final double FIELD_VALUE_FACTOR = 65536.0 / 3.5;
@@ -49,20 +53,28 @@ public class FitParser {
 	private static FitData extractMetrics(String path) throws IOException {
 		final FitData fitData = new FitData();
 		try (FileInputStream in = new FileInputStream(path)) {
-			new Decode().read(in, m -> {
-				if (m.getNum() == VO2_MAX_MESSAGE_ID)
-					fitData.setVo2Max(m.getFieldIntegerValue(VO2_MAX_FIELD_ID) / FIELD_VALUE_FACTOR); // Convert MET to Vo2Max
-				if (m.getNum() == SPORT_MESSAGE_ID)
-					fitData.setSport(Sport.getByValue(m.getFieldShortValue(SPORT_FIELD_ID)));
-				if (m.getNum() == DATETIME_MESSAGE_ID)
-					fitData.setTime(new DateTime(m.getFieldIntegerValue(DATETIME_FIELD_ID)).getDate().toInstant().atOffset(UTC).toLocalDateTime());
-				if (m.getNum() == CADENCE_MESSAGE_ID)
-					fitData.setCadence(m.getFieldByteValue(CADENCE_FIELD_ID));
-				if (m.getNum() == HR_MESSAGE_ID)
-					fitData.setHr(m.getFieldByteValue(HR_FIELD_ID));
-				if (m.getNum() == WEIGHT_MESSAGE_ID)
-					fitData.setWeight(m.getFieldIntegerValue(WEIGHT_FIELD_ID));
-			}, msgDef -> {});
+			try {
+				new Decode().read(in, m -> {
+					if (m.getNum() == VO2_MAX_MESSAGE_ID)
+						fitData.setVo2Max(m.getFieldIntegerValue(VO2_MAX_FIELD_ID) / FIELD_VALUE_FACTOR); // Convert MET to Vo2Max
+					if (m.getNum() == SPORT_MESSAGE_ID)
+						fitData.setSport(Sport.getByValue(m.getFieldShortValue(SPORT_FIELD_ID)));
+					if (m.getNum() == DATETIME_MESSAGE_ID)
+						fitData.setTime(new DateTime(m.getFieldIntegerValue(DATETIME_FIELD_ID)).getDate().toInstant().atOffset(UTC).toLocalDateTime());
+					if (m.getNum() == CADENCE_MESSAGE_ID)
+						fitData.setCadence(m.getFieldByteValue(CADENCE_FIELD_ID) != null ? m.getFieldByteValue(CADENCE_FIELD_ID) : 0);
+					if (m.getNum() == HR_MESSAGE_ID)
+						fitData.setHr(m.getFieldByteValue(HR_FIELD_ID));
+					if (m.getNum() == DISTANCE_MESSAGE_ID)
+						fitData.setDistance(m.getFieldIntegerValue(DISTANCE_FIELD_ID) != null ? m.getFieldIntegerValue(DISTANCE_FIELD_ID) : -1);
+					if (m.getNum() == TIME_MESSAGE_ID)
+						fitData.setTimer(m.getFieldIntegerValue(TIME_FIELD_ID) != null ? m.getFieldIntegerValue(TIME_FIELD_ID) : -1);
+					if (m.getNum() == WEIGHT_MESSAGE_ID)
+						fitData.setWeight(m.getFieldIntegerValue(WEIGHT_FIELD_ID));
+				}, msgDef -> {});
+			} catch (Exception e) {
+				// Skip badly formatted files
+			}
 		}
 		return fitData;
 	}
@@ -83,7 +95,7 @@ public class FitParser {
 				final LocalDate time = fitData.getTime().toLocalDate();
 				fitDataPerDate.putIfAbsent(time, fitData);
 				// Only keep highest vo2Max per day
-				if (fitData.getVo2Max() > 0 && fitData.getVo2Max() > fitDataPerDate.get(time).getVo2Max()) 
+				if(fitData.getVo2Max() > fitDataPerDate.get(time).getVo2Max()) 
 					fitDataPerDate.put(time, fitData);
 			}
 		}
@@ -93,12 +105,15 @@ public class FitParser {
 		Desktop.getDesktop().browse(createGraph(fitDataPerDate, "AverageHR", f -> f.getHr().byteValue() > 0 ? f.getHr().byteValue() : f.getHr().byteValue() + 255).toUri());
 		Desktop.getDesktop().browse(createGraph(fitDataPerDate, "Cadence", f -> f.getCadence().floatValue() * 2).toUri());
 		Desktop.getDesktop().browse(createGraph(fitDataPerDate, "Weight", f -> f.getWeight()).toUri());
+		Desktop.getDesktop().browse(createGraph(fitDataPerDate, "AverageSpeed", f -> f.getAvgSpeed()).toUri());
 	}
 	
 	/**
 	 * Create temporary html file with Vo2Max Data
 	 */
 	private static final Path createGraph(Map<LocalDate, FitData> fitDataPerDate, String name, Function<FitData, Number> f) throws IOException {
+
+		fitDataPerDate.entrySet().stream().filter(e -> f.apply(e.getValue()).intValue() == 0).map(e -> e.getKey()).collect(Collectors.toSet()).forEach(k -> fitDataPerDate.remove(k));
 		
 		// Raw data
 		final String data = fitDataPerDate.entrySet().stream().map(e -> String.format(Locale.US, "{x: new Date('%s'), y:%.2f}", e.getKey(), f.apply(e.getValue()).doubleValue())).collect(Collectors.joining(","));
@@ -136,6 +151,8 @@ public class FitParser {
 		private LocalDateTime time;
 		private Sport sport;
 		private double weight;
+		private double distance;
+		private double timer;
 		
 		double getVo2Max() {
 			return vo2Max;
@@ -183,6 +200,18 @@ public class FitParser {
 
 		void setWeight(double weight) {
 			this.weight = weight;
+		}
+		
+		void setDistance(int distance) {
+			this.distance = distance;
+		}
+		
+		void setTimer(int timer) {
+			this.timer = timer;
+		}
+		
+		double getAvgSpeed() {
+			return (timer / 60) / (distance / 1000); // min/km
 		}
 	}
 }
